@@ -1,0 +1,57 @@
+#lang racket
+
+(define (install-deriv-package)
+  ;; internal procedures
+  (define (deriv-sum operands var) (make-sum (deriv (addend operands) var) (deriv (augend operands) var)))
+  (define (make-sum a1 a2)
+      (cond ((and (number? a1) (number? a2))
+             (cond ((=number? a1 0) a2)
+                   ((=number? a2 0) a1)
+                   (else (+ a1 a2))))
+            ((and (number? a1) (null? a2)) a1)
+            ((and (number? a1) (pair? a2))(+ a1 (make-sum (car a2) (cdr a2))))
+            (else (list '+ a1 a2))))
+  (define (addend s) (car s))
+  (define (augend s) (make-sum cdr s))
+  
+  (define (deriv-product operands var) 
+    (make-sum
+           (make-product (multiplier exp)
+                         (deriv (multiplicand exp) var))
+           (make-product (deriv (multiplier exp) var)
+                         (multiplicand exp))))
+  (define (multiplier p) (car p))
+  (define (multiplicand p) (cdr p))
+  (define (make-product m1 m2)
+  (cond ((and (number? m1) (number? m2))
+             (cond ((or (=number? m1 0) (=number? m2 0)) 0)
+                   ((=number? m1 1) m2)
+                   ((=number? m2 1) m1)
+                   (else (* m1 m2))))
+        ((and (number? m1) (null? m2)) m1)
+        ((and (number? m1) (pair? m2))(* m1 (make-product (car m2) (cdr m2))))
+        (else (list '* m1 m2))))
+  (define (deriv-exponent operands var)
+    (make-product (make-product (exponent exp) (make-exponentiation (base exp) (- (exponent exp) 1))) (deriv (base exp))))
+  (define (exponent x) (cdr x))
+  (define (base x) (car x))
+  (define (make-exponentiation e1 e2)
+  (cond ((=number? e1 0) 0)
+        ((=number? e2 0) 1)
+        ((=number? e1 1) 1)
+        ((=number? e2 1) e1)
+        (else (list '** e1 e2))))
+  
+  ;; interface to the rest of the system
+  (put 'deriv '(+) deriv-sum)
+  (put 'deriv '(*) deriv-product)
+  (put 'deriv '(**) deriv-exponent)
+  'done)
+
+ ;; What corresponding changes to the derivative system are required?
+ ;; very little needs to change
+ (define (deriv exp var)
+   (cond ((number? exp) 0)
+         ((variable? exp) (if (same-variable? exp var) 1 0))
+         (else ((get '(operator exp) 'deriv) (operands exp)
+                                            var))))

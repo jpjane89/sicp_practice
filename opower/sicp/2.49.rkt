@@ -1,0 +1,46 @@
+#lang racket
+
+(define (segments->painter segment-list)
+  (lambda (frame)
+    (for-each
+     (lambda (segment)
+       (draw-line
+        ((frame-coord-map frame) (start-segment segment))
+        ((frame-coord-map frame) (end-segment segment))))
+     segment-list)))
+
+(define (frame-> painter frame)
+  (let ((origin-bl (origin-frame frame))
+        (origin-tl (add-vector origin-bl (edge2-frame frame)))
+        (origin-br (add-vector origin-bl (edge1-frame frame)))
+        (origin-tr (add-vector origin-br (edge2-frame frame))))
+        (bottom (make-segment origin-bl origin-br))
+        (left (make-segment origin-bl origin-tl))
+        (top (make-segment origin-tl origin-tr))
+        (right (make-segment origin-tr origin-br))
+    (segments->painter (list bottom left top right) frame)))
+
+(define (x-> painter frame)
+  (let ((origin-bl (origin-frame frame))
+        (origin-tl (add-vector origin-bl (edge2-frame frame)))
+        (origin-br (add-vector origin-bl (edge1-frame frame)))
+        (origin-tr (add-vector origin-br (edge2-frame frame))))
+    (segments->painter (list (make-segment origin-bl origin-tr) (make-segment origin-br origin-tl)) frame)))
+
+(define (midpoint segment)
+  (make-segment(scale-vect (start-segment segment) 0.5) (scale-vect (end-segment segment) 0.5)))
+
+(define midpoint->painter frame)
+  (let ((origin-bl (origin-frame frame))
+        (origin-tl (add-vector origin-bl (edge2-frame frame)))
+        (origin-br (add-vector origin-bl (edge1-frame frame)))
+        (origin-tr (add-vector origin-br (edge2-frame frame))))
+        (bottom (make-segment origin-bl origin-br))
+        (left (make-segment origin-bl origin-tl))
+        (top (make-segment origin-tl origin-tr))
+        (right (make-segment origin-tr origin-br))
+        (mp-bottom (midpoint bottom))
+        (mp-left (midpoint left))
+        (mp-top (midpoint top))
+        (mp-right (midpoint right))
+    (segments->painter (list (make-segment mp-left mp-top) (make-segment mp-top mp-right) (make-segment mp-right mp-bottom) (make-segment mp-bottom mp-left)) frame))
